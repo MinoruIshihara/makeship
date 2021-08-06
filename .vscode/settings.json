@@ -1,0 +1,20 @@
+{
+    "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: WebKit, IndentWidth: 4, AlignConsecutiveAssignments: true, DerivePointerAlignment: true, AllowShortFunctionsOnASingleLine: Inline, AlignTrailingComments: true}",
+    "editor.cursorStyle": "block",
+    "editor.formatOnSave": true,
+    "editor.wordWrap": "on",
+    "editor.fontFamily": "'Ubuntu Mono', 'Noto Sans CJK JP'",
+    "C_Cpp.clang_format_style": "{BasedOnStyle: WebKit, IndentWidth: 4, AlignConsecutiveAssignments: true, DerivePointerAlignment: true, AllowShortFunctionsOnASingleLine: Inline, AlignTrailingComments: true}",
+    "files.associations": {
+        "*.tcc": "c",
+        "complex": "c",
+        "functional": "c",
+        "type_traits": "c",
+        "bitset": "c",
+        "random": "c",
+        "limits": "c",
+        "blackship.h": "c",
+        "sdl_gfxprimitives.h": "c",
+        "sdl2_gfxprimitives.h": "c"
+    },
+}
