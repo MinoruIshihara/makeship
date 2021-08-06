@@ -6,7 +6,7 @@ CFLAGS = -Wall $(COPTIONS)
 
 LDFLAGS = 
 LOADLIBES =  
-LDLIBS = -lm -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx -L/usr/local/lib -I/usr/local/include/SDL2 -Wl,-rpath,/usr/local/lib
+LDLIBS = -lm -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_gfx -Wl,-rpath,/usr/local/lib
 
 TARGET = blackship
 OBJS = $(TARGET).o actionwindow.o mainwindow.o partswindow.o calcparts.o calculation.o filesystem.o

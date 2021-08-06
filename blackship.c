@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
             SDL_UnlockMutex(mxLock);
         }
 
-        SDL_Delay(40); //動作が不安定になるため20->40に変更
+        SDL_Delay(20); //動作が不安定になるため20->40に変更
     }
 
     /** 終了処理 **/
@@ -142,6 +142,7 @@ int InputEvent(void* arg)
 
 void getInputFromEvent(SDL_Event event)
 {
+    inputInfo.mouseL = SDL_FALSE;
     switch (event.type) {
     case SDL_QUIT:
         /** スレッド終了指示 **/

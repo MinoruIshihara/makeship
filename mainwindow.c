@@ -43,7 +43,7 @@ void DestroyWindow(void)
 
 int initMainWin()
 {
-    SDL_Surface *s = IMG_Load(MAIN_WINDOW_BG);
+    SDL_Surface *s = IMG_Load("/home/vmware/git/makeship/mainWindow.png");
     if (s == NULL) {
         return -1;
     }

@@ -19,8 +19,8 @@
 
 #define SAVE_TYPE_NUM 16
 
-#define MAIN_WINDOW_BG "./mainWindow.png"
-#define PARTS_WINDOW_BG "./partsWindow.png"
+#define MAIN_WINDOW_BG "mainWindow.png"
+#define PARTS_WINDOW_BG "partsWindow.png"
 
 extern int initMainWin();
 extern int initPartsWin();
