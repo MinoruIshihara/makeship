@@ -64,8 +64,6 @@ int main(int argc, char* argv[])
 
         //各モード処理
         if (0 == SDL_LockMutex(mxLock)) {
-            SDL_RenderClear(render);
-
             switch (gameMode) {
             case MAIN_WINDOW:
                 drawMainWin();
@@ -88,8 +86,7 @@ int main(int argc, char* argv[])
             SDL_RenderPresent(render);
             SDL_UnlockMutex(mxLock);
         }
-
-        SDL_Delay(20); //動作が不安定になるため20->40に変更
+        SDL_Delay(30); //動作が不安定になるため20->40に変更
     }
 
     /** 終了処理 **/

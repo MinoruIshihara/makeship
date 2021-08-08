@@ -13,7 +13,7 @@
 #define ENEMY_NUM 4
 #define BULLET_NUM 64
 #define GUN_TYPE_NUM 3
-#define MAX_GUN_NUM 10
+#define MAX_GUN_NUM 30
 #define BODY_TYPE_NUM 6
 #define MAX_BODY_NUM 32
 
@@ -102,7 +102,8 @@ typedef struct {
     int hp;
     int speed;
     int sheild;
-    GunInfo gun;
+    int gunNum;
+    GunInfo gun[MAX_GUN_NUM];
 } PlayerInfo;
 
 typedef struct {

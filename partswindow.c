@@ -35,11 +35,13 @@ SDL_bool dragging = SDL_FALSE;
 int picked        = 0;
 int mousePointer[2];
 
-void partsWinEvent();
+int partsWinEvent();
 ActionCommand getPartsAction();
+int getObjIDFromList(int x, int y);
 
 void placeBody(BodyInfo body, int x, int y);
 void placeGun(GunInfo gun, int x, int y);
+
 void getGunList();
 void getBodyList();
 
@@ -49,7 +51,7 @@ int initPartsWin()
     gunListTex  = SDL_CreateTextureFromSurface(render, IMG_Load("gun_list.png"));
     bodyListTex = SDL_CreateTextureFromSurface(render, IMG_Load("body_list.png"));
 
-    bodyDraw = SDL_CreateRGBSurface(0, 490, 172, 8, 0, 0, 0, 0);
+    bodyDraw = SDL_CreateRGBSurface(0, 499, 182, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
 
     getBodyList();
     getGunList();
@@ -65,15 +67,18 @@ int initPartsWin()
 
 void drawPartsWin()
 {
+    int arg1                   = 0;
+    SDL_Thread *partsWinThread = SDL_CreateThread(partsWinEvent, "partsWinEvent", &arg1);
+
     SDL_Texture *texture;
 
     SDL_Rect mainBGSrc     = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
     SDL_Rect mainWinTarget = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
     SDL_RenderCopy(render, partsBG, &mainBGSrc, &mainWinTarget);
 
-    SDL_Texture *drawTexture = SDL_CreateTextureFromSurface(render, bodyDraw);
-    SDL_Rect drawSrc         = { 0, 0, 490, 172 };
+    SDL_Rect drawSrc         = { 0, 0, 499, 182 };
     SDL_Rect drawTarget      = { 50, 43, 499, 182 };
+    SDL_Texture *drawTexture = SDL_CreateTextureFromSurface(render, bodyDraw);
     SDL_RenderCopy(render, drawTexture, &drawSrc, &drawTarget);
 
     SDL_Rect listSrc    = { 366, 38, 499, 192 };
@@ -105,6 +110,8 @@ void drawPartsWin()
         break;
     case GUN_PLACE:
         texture        = SDL_CreateTextureFromSurface(render, gunList[picked].surface);
+        pickedSrc.x    = 0;
+        pickedSrc.y    = 0;
         pickedSrc.w    = gunList[picked].surface->w;
         pickedSrc.h    = gunList[picked].surface->h;
         pickedTarget.x = mousePointer[0];
@@ -115,14 +122,15 @@ void drawPartsWin()
         break;
     }
 
-    SDL_RenderPresent(render);
+    //SDL_RenderPresent(render);
 
-    partsWinEvent();
+    int ret;
+    SDL_WaitThread(partsWinThread, &ret);
 
     return;
 }
 
-void partsWinEvent()
+int partsWinEvent()
 {
     SDL_Rect rect = { 0, 0, 256, 128 };
 
@@ -157,6 +165,7 @@ void partsWinEvent()
                 placeBody(bodyList[picked], mousePointer[0], mousePointer[1]);
             }
             editMode = NORMAL;
+            break;
 
         case PICK_OBJECT:
             if (editMode == GUN_LIST) {
@@ -173,6 +182,7 @@ void partsWinEvent()
         }
         inputInfo.mouseL = SDL_FALSE;
     }
+    return 0;
 }
 
 ActionCommand getPartsAction()
@@ -193,6 +203,7 @@ ActionCommand getPartsAction()
     case GUN_LIST:
         if (370 < x && x < 550 && 40 < y && y < 190) {
             actionCmd = PICK_OBJECT;
+            picked    = getObjIDFromList(x, y);
         } else {
             actionCmd = CLOSE_LIST;
         }
@@ -225,38 +236,36 @@ void setPixel(SDL_bool data, int x, int y)
 
 void getBodyList()
 {
-    bodyList[0].surface = SDL_CreateRGBSurface(0, 55, 30, 8, 0, 0, 0, 0);
-    SDL_Rect rect       = { 0, 0, 55, 30 };
-    SDL_FillRect(bodyList[0].surface, &rect, 0x000000ff);
-    bodyList[0].hp = 50;
+    bodyList[0].surface = IMG_Load("body1.png");
+    bodyList[0].hp      = 50;
 
-    bodyList[1].surface = SDL_CreateRGBSurface(0, 30, 30, 8, 0, 0, 0, 0);
+    bodyList[1].surface = IMG_Load("body2.png");
     bodyList[1].hp      = 50;
 
-    bodyList[2].surface = IMG_Load("tri1.png");
+    bodyList[2].surface = IMG_Load("body3.png");
     bodyList[2].hp      = 30;
 
-    bodyList[3].surface = IMG_Load("tri2.png");
+    bodyList[3].surface = IMG_Load("body4.png");
     bodyList[3].hp      = 25;
 
-    bodyList[4].surface = SDL_CreateRGBSurface(0, 30, 3, 8, 0, 0, 0, 0);
+    bodyList[4].surface = IMG_Load("body5.png");
     bodyList[4].hp      = 5;
 
-    bodyList[5].surface = SDL_CreateRGBSurface(0, 3, 30, 8, 0, 0, 0, 0);
+    bodyList[5].surface = IMG_Load("body6.png");
     bodyList[5].hp      = 5;
 }
 
 void getGunList()
 {
-    char imageName[3][8] = {
-        "gun1.png",
-        "gun2.png",
-        "gun3.png"
+    char imageName[3][9] = {
+        "gun1.png\0",
+        "gun2.png\0",
+        "gun3.png\0"
     };
-    char bulletImageName[3][11] = {
-        "bullet1.png",
-        "bullet2.png",
-        "bullet3.png"
+    char bulletImageName[3][12] = {
+        "bullet1.png\0",
+        "bullet2.png\0",
+        "bullet3.png\0"
     };
 
     for (int i = 0; i < GUN_TYPE_NUM; i++) {
@@ -293,8 +302,14 @@ int getObjIDFromList(int x, int y)
 
 void placeBody(BodyInfo body, int x, int y)
 {
+    SDL_Rect tar = { x - 50, y - 43, body.surface->w, body.surface->h };
+    SDL_BlitSurface(body.surface, NULL, bodyDraw, &tar);
+    playerInfo.hp += body.hp;
 }
 
 void placeGun(GunInfo gun, int x, int y)
 {
+    SDL_Rect tar = { x - 50, y - 43, gun.surface->w, gun.surface->h };
+    SDL_BlitSurface(gun.surface, NULL, bodyDraw, &tar);
+    playerInfo.gun[playerInfo.gunNum] = gun;
 }
