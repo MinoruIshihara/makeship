@@ -56,10 +56,6 @@ int initPartsWin()
     getBodyList();
     getGunList();
 
-    /** ウインドウへの描画 **/
-    drawPartsWin();
-
-    /* image利用終了(テクスチャに転送後はゲーム中に使わないので) */
     IMG_Quit();
 
     return 0;
@@ -70,6 +66,7 @@ void drawPartsWin()
     int arg1                   = 0;
     SDL_Thread *partsWinThread = SDL_CreateThread(partsWinEvent, "partsWinEvent", &arg1);
 
+    SDL_Surface *surface;
     SDL_Texture *texture;
 
     SDL_Rect mainBGSrc     = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
@@ -80,6 +77,13 @@ void drawPartsWin()
     SDL_Rect drawTarget      = { 50, 43, 499, 182 };
     SDL_Texture *drawTexture = SDL_CreateTextureFromSurface(render, bodyDraw);
     SDL_RenderCopy(render, drawTexture, &drawSrc, &drawTarget);
+
+    char playerMoney[10];
+    sprintf(playerMoney, "%d", playerInfo.money);
+    surface              = TTF_RenderUTF8_Blended(font30, playerMoney, (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Rect moneyTarget = { 300, 5, surface->w, surface->h };
+    texture              = SDL_CreateTextureFromSurface(render, surface);
+    SDL_RenderCopy(render, texture, NULL, &moneyTarget);
 
     SDL_Rect listSrc    = { 366, 38, 499, 192 };
     SDL_Rect listTarget = { 366, 38, 274, 192 };
@@ -99,8 +103,8 @@ void drawPartsWin()
         pickedSrc.y    = 0;
         pickedSrc.w    = bodyList[picked].surface->w;
         pickedSrc.h    = bodyList[picked].surface->h;
-        pickedTarget.x = mousePointer[0];
-        pickedTarget.y = mousePointer[1];
+        pickedTarget.x = mousePointer[0] - bodyList[picked].surface->w / 2;
+        pickedTarget.y = mousePointer[1] - bodyList[picked].surface->h;
         pickedTarget.w = bodyList[picked].surface->w;
         pickedTarget.h = bodyList[picked].surface->h;
         SDL_RenderCopy(render, texture, &pickedSrc, &pickedTarget);
@@ -114,15 +118,15 @@ void drawPartsWin()
         pickedSrc.y    = 0;
         pickedSrc.w    = gunList[picked].surface->w;
         pickedSrc.h    = gunList[picked].surface->h;
-        pickedTarget.x = mousePointer[0];
-        pickedTarget.y = mousePointer[1];
+        pickedTarget.x = mousePointer[0] - gunList[picked].surface->w / 2;
+        pickedTarget.y = mousePointer[1] - gunList[picked].surface->h;
         pickedTarget.w = gunList[picked].surface->w;
         pickedTarget.h = gunList[picked].surface->h;
         SDL_RenderCopy(render, texture, &pickedSrc, &pickedTarget);
         break;
     }
 
-    //SDL_RenderPresent(render);
+    SDL_RenderPresent(render);
 
     int ret;
     SDL_WaitThread(partsWinThread, &ret);
@@ -143,11 +147,16 @@ int partsWinEvent()
         switch (getPartsAction()) {
         case BACK:
             gameMode = MAIN_WINDOW;
+            initMainWin();
             break;
         case SAVE:
+            playerInfo.surface = bodyDraw;
+            isCreatedPlayer    = SDL_TRUE;
             break;
         case CLEAR:
-            SDL_FillRect(playerInfo.surface, &rect, 255);
+            SDL_FillRect(bodyDraw, &rect, 0xffffffff);
+            SDL_FillRect(playerInfo.surface, &rect, 0xffffffff);
+            playerInfo.money = playerInfo.initMoney;
             break;
         case CLOSE_LIST:
             editMode = NORMAL;
@@ -160,9 +169,15 @@ int partsWinEvent()
             break;
         case PLACE_OBJECT:
             if (editMode == GUN_PLACE) {
-                placeGun(gunList[picked], mousePointer[0], mousePointer[1]);
+                placeGun(
+                    gunList[picked],
+                    mousePointer[0] - gunList[picked].surface->w / 2,
+                    mousePointer[1] - gunList[picked].surface->h);
             } else if (editMode == BODY_PLACE) {
-                placeBody(bodyList[picked], mousePointer[0], mousePointer[1]);
+                placeBody(
+                    bodyList[picked],
+                    mousePointer[0] - bodyList[picked].surface->w / 2,
+                    mousePointer[1] - bodyList[picked].surface->h);
             }
             editMode = NORMAL;
             break;
@@ -238,21 +253,27 @@ void getBodyList()
 {
     bodyList[0].surface = IMG_Load("body1.png");
     bodyList[0].hp      = 50;
+    bodyList[0].cost    = 50;
 
     bodyList[1].surface = IMG_Load("body2.png");
-    bodyList[1].hp      = 50;
+    bodyList[1].hp      = 35;
+    bodyList[1].cost    = 35;
 
     bodyList[2].surface = IMG_Load("body3.png");
-    bodyList[2].hp      = 30;
+    bodyList[2].hp      = 17;
+    bodyList[2].cost    = 17;
 
     bodyList[3].surface = IMG_Load("body4.png");
-    bodyList[3].hp      = 25;
+    bodyList[3].hp      = 13;
+    bodyList[3].cost    = 13;
 
     bodyList[4].surface = IMG_Load("body5.png");
     bodyList[4].hp      = 5;
+    bodyList[4].cost    = 5;
 
     bodyList[5].surface = IMG_Load("body6.png");
     bodyList[5].hp      = 5;
+    bodyList[5].cost    = 5;
 }
 
 void getGunList()
@@ -270,6 +291,7 @@ void getGunList()
 
     for (int i = 0; i < GUN_TYPE_NUM; i++) {
         gunList[i].surface = IMG_Load(imageName[i]);
+        gunList[i].cost    = 20 + i * i * 10;
 
         BulletInfo binfo;
         binfo.surface     = IMG_Load(bulletImageName[i]);
@@ -302,14 +324,25 @@ int getObjIDFromList(int x, int y)
 
 void placeBody(BodyInfo body, int x, int y)
 {
-    SDL_Rect tar = { x - 50, y - 43, body.surface->w, body.surface->h };
-    SDL_BlitSurface(body.surface, NULL, bodyDraw, &tar);
-    playerInfo.hp += body.hp;
+    if (playerInfo.money < body.cost) {
+        editMode = NORMAL;
+    } else {
+        SDL_Rect tar = { x - 50, y - 43, body.surface->w, body.surface->h };
+        SDL_BlitSurface(body.surface, NULL, bodyDraw, &tar);
+        playerInfo.hp += body.hp;
+        playerInfo.money -= body.cost;
+    }
 }
 
 void placeGun(GunInfo gun, int x, int y)
 {
-    SDL_Rect tar = { x - 50, y - 43, gun.surface->w, gun.surface->h };
-    SDL_BlitSurface(gun.surface, NULL, bodyDraw, &tar);
-    playerInfo.gun[playerInfo.gunNum] = gun;
+    if (playerInfo.money < gun.cost) {
+        editMode = NORMAL;
+    } else {
+        SDL_Rect tar = { x - 50, y - 43, gun.surface->w, gun.surface->h };
+        SDL_BlitSurface(gun.surface, NULL, bodyDraw, &tar);
+        playerInfo.gun[playerInfo.gunNum] = gun;
+        playerInfo.gunNum++;
+        playerInfo.money -= gun.cost;
+    }
 }

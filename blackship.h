@@ -22,18 +22,6 @@
 #define MAIN_WINDOW_BG "mainWindow.png"
 #define PARTS_WINDOW_BG "partsWindow.png"
 
-extern int initMainWin();
-extern int initPartsWin();
-extern int initActionWin();
-
-extern void drawMainWin();
-extern void drawPartsWin();
-extern void drawActionWin(int millis);
-
-extern void destroyMainWin();
-extern void destroyPartsWin();
-extern void destroyActionWin();
-
 typedef enum {
     EXIT_GAME     = -1,
     MAIN_WINDOW   = 0,
@@ -80,6 +68,7 @@ typedef struct {
 typedef struct {
     BulletInfo bullet;
     SDL_Surface* surface;
+    int cost;
 } GunInfo;
 
 typedef struct {
@@ -91,12 +80,14 @@ typedef struct {
 typedef struct {
     int hp;
     SDL_Surface* surface;
+    int cost;
 } BodyInfo;
 
 /*プレイヤー(初期)情報の構造体 */
 typedef struct {
     SDL_Rect shape[256];
     SDL_Surface* surface;
+    int initMoney;
     int money;
     int level;
     int hp;
@@ -104,6 +95,7 @@ typedef struct {
     int sheild;
     int gunNum;
     GunInfo gun[MAX_GUN_NUM];
+    int xp;
 } PlayerInfo;
 
 typedef struct {
@@ -163,13 +155,31 @@ extern SDL_bool isCreatedPlayer;
 
 extern SDL_Renderer* render;
 
-extern void collisionPlayer(Bullet* ci, Player* cj);
-extern void collisionEnemy(Bullet* ci, Enemy* cj);
+extern SDL_Window* window;
+extern InputInfo inputInfo;
 
-/* window.c */
+extern TTF_Font* font;
+extern TTF_Font* font30;
+extern TTF_Font* font40;
+
+PlayerInfo initPlayer();
+void exitGame(ExitCode exitStatus);
+
+extern int initMainWin();
+extern int initPartsWin();
+extern int initActionWin();
+
+extern void drawMainWin();
+extern void drawPartsWin();
+extern void drawActionWin(int millis);
+
+extern void destroyMainWin();
+extern void destroyPartsWin();
+extern void destroyActionWin();
+
 extern int InitWindow(void);
 extern void DestroyWindow(void);
 extern void RenderWindow(void);
 
-extern SDL_Window* window;
-extern InputInfo inputInfo;
+extern void collisionPlayer(Bullet* ci, Player* cj);
+extern void collisionEnemy(Bullet* ci, Enemy* cj);

@@ -21,6 +21,10 @@ GameMode gameMode   = MAIN_WINDOW;
 PlayerInfo playerInfo;
 SDL_bool isCreatedPlayer = SDL_FALSE;
 
+TTF_Font* font;
+TTF_Font* font30;
+TTF_Font* font40;
+
 /* main */
 int main(int argc, char* argv[])
 {
@@ -31,13 +35,29 @@ int main(int argc, char* argv[])
         exitGame(FAILED_INIT_SDL);
     }
 
-    SDL_Thread* eventThread = SDL_CreateThread(InputEvent, "InputEvent", &inputInfo);
-    if (eventThread == NULL) {
-        exitGame(FAIELD_INIT_THREAD);
+    if (TTF_Init() < 0) {
+        printf("TTFcould not initialize! TTF_Error: %s\n", TTF_GetError());
+    } else {
+        font = TTF_OpenFont("UDDigiKyokashoN-R-01.ttf", 20);
+        if (!font) {
+            printf("TTF_OpenFont: %s\n", TTF_GetError());
+        }
+
+        font30 = TTF_OpenFont("UDDigiKyokashoN-R-01.ttf", 30);
+        if (!font30) {
+            printf("TTF_OpenFont: %s\n", TTF_GetError());
+        }
+
+        font40 = TTF_OpenFont("UDDigiKyokashoN-R-01.ttf", 40);
+        if (!font40) {
+            printf("TTF_OpenFont: %s\n", TTF_GetError());
+        }
     }
-    SDL_DetachThread(eventThread);
 
     mxLock = SDL_CreateMutex();
+
+    playerInfo = initPlayer();
+
     if (mxLock == NULL) {
         exitGame(FAILED_INIT_MXLOCK);
     }
@@ -55,6 +75,12 @@ int main(int argc, char* argv[])
     }
 
     initActionWin();
+
+    SDL_Thread* eventThread = SDL_CreateThread(InputEvent, "InputEvent", &inputInfo);
+    if (eventThread == NULL) {
+        exitGame(FAIELD_INIT_THREAD);
+    }
+    SDL_DetachThread(eventThread);
 
     while (1) {
         if (gameMode == EXIT_GAME)
@@ -83,7 +109,7 @@ int main(int argc, char* argv[])
             case EXIT_GAME:
                 exitGame(NONE_ERROR);
             }
-            SDL_RenderPresent(render);
+            //SDL_RenderPresent(render);
             SDL_UnlockMutex(mxLock);
         }
         SDL_Delay(30); //動作が不安定になるため20->40に変更
@@ -92,6 +118,20 @@ int main(int argc, char* argv[])
     /** 終了処理 **/
 
     return 0;
+}
+
+PlayerInfo initPlayer()
+{
+    PlayerInfo pInfo;
+    pInfo.gunNum    = 0;
+    pInfo.hp        = 0;
+    pInfo.level     = 1;
+    pInfo.initMoney = 800;
+    pInfo.money     = 800;
+    pInfo.speed     = 100;
+    pInfo.xp        = 0;
+
+    return pInfo;
 }
 
 void exitGame(ExitCode exitCode)

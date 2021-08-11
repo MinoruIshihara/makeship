@@ -12,6 +12,8 @@ SDL_Renderer *render;
 
 SDL_Texture *mainBG;
 
+SDL_bool firstDraw;
+
 void mainWinEvent();
 ActionCommand getMainAction();
 
@@ -43,7 +45,10 @@ void DestroyWindow(void)
 
 int initMainWin()
 {
-    SDL_Surface *s = IMG_Load("/home/vmware/git/makeship/mainWindow.png");
+    firstDraw = SDL_TRUE;
+
+    SDL_Surface *s
+        = IMG_Load("/home/vmware/git/makeship/mainWindow.png");
     if (s == NULL) {
         return -1;
     }
@@ -53,8 +58,54 @@ int initMainWin()
         return -1;
     }
 
-    /** ウインドウへの描画 **/
-    drawMainWin();
+    SDL_Rect mainBGSrc     = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+    SDL_Rect mainWinTarget = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+    SDL_RenderCopy(render, mainBG, &mainBGSrc, &mainWinTarget);
+
+    char playerMoney[10];
+    sprintf(playerMoney, "%d", playerInfo.money);
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font40, playerMoney, (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Rect moneyTarget = { 85, 10, surface->w, surface->h };
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(render, surface);
+    SDL_RenderCopy(render, texture, NULL, &moneyTarget);
+
+    char playerExp[10];
+    sprintf(playerExp, "%d", playerInfo.xp);
+    surface            = TTF_RenderUTF8_Blended(font40, playerExp, (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Rect expTarget = { 295, 10, surface->w, surface->h };
+    texture            = SDL_CreateTextureFromSurface(render, surface);
+    SDL_RenderCopy(render, texture, NULL, &expTarget);
+
+    if (isCreatedPlayer) {
+        int atk = 0;
+        for (int i = 0; i < playerInfo.gunNum; i++) {
+            atk += playerInfo.gun[i].bullet.damage;
+        }
+
+        SDL_Rect playerSrc    = { 0, 0, 500, 182 };
+        SDL_Rect playerTarget = { 454, 166, 150, 55 };
+        texture               = SDL_CreateTextureFromSurface(render, playerInfo.surface);
+        SDL_RenderCopy(render, texture, &playerSrc, &playerTarget);
+
+        char playerHP[100];
+        sprintf(playerHP, "耐久 : %d", playerInfo.hp);
+        surface = TTF_RenderUTF8_Blended(font, playerHP, (SDL_Color){ 0, 0, 0, 255 });
+        texture = SDL_CreateTextureFromSurface(render, surface);
+
+        SDL_Rect textSrc = { 0, 0, surface->w, surface->h };
+        SDL_Rect textTar = { 454, 110, surface->w, surface->h };
+        SDL_RenderCopy(render, texture, &textSrc, &textTar);
+
+        char playerAtk[100];
+        sprintf(playerAtk, "攻撃 : %d", atk);
+        surface = TTF_RenderUTF8_Blended(font, playerAtk, (SDL_Color){ 0, 0, 0, 255 });
+        texture = SDL_CreateTextureFromSurface(render, surface);
+
+        textTar.y = 140;
+        SDL_RenderCopy(render, texture, &textSrc, &textTar);
+    }
+
+    SDL_RenderPresent(render);
 
     /* image利用終了(テクスチャに転送後はゲーム中に使わないので) */
     IMG_Quit();
@@ -64,11 +115,6 @@ int initMainWin()
 
 void drawMainWin()
 {
-    SDL_Rect mainBGSrc     = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
-    SDL_Rect mainWinTarget = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
-    SDL_RenderCopy(render, mainBG, &mainBGSrc, &mainWinTarget);
-    SDL_RenderPresent(render);
-
     mainWinEvent();
 
     return;

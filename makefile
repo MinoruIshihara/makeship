@@ -27,7 +27,7 @@ debug: $(TARGET)
 # ゲームの個人開発などで，完成品をmakeする際などに使うとよい
 #
 release: CPPFLAGS = -DNDEBUG
-release: COPTIONS = -O3 
+release: COPTIONS = -O3
 release: $(TARGET)
 
 # 暗黙のルールでの動作は以下の通り
