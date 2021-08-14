@@ -110,8 +110,6 @@ typedef struct {
     SDL_Surface* surface;
     int hp;
     int speed;
-    int sheild;
-    int gunPower;
     GunInfo gun;
 } EnemyInfo;
 

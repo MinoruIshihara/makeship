@@ -61,6 +61,7 @@ void drawEffect()
 void makeStage()
 {
     EnemyInfo enemies[10];
+
     enemies[0].surface = IMG_Load("");
 
     stage.enemyNum
