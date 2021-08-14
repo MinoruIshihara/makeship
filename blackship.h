@@ -10,7 +10,7 @@
 #define SHIP_WIDTH 256
 #define SHIP_HEIGHT 128
 
-#define ENEMY_NUM 4
+#define MAX_ENEMY_NUM 4
 #define BULLET_NUM 64
 #define GUN_TYPE_NUM 3
 #define MAX_GUN_NUM 30
@@ -91,8 +91,6 @@ typedef struct {
     int money;
     int level;
     int hp;
-    int speed;
-    int sheild;
     int gunNum;
     GunInfo gun[MAX_GUN_NUM];
     int xp;
@@ -105,13 +103,11 @@ typedef struct {
     int y;
     int vx;
     int vy;
-    int sheild;
-    GunInfo gun;
 } Player;
 
 /* 敵(初期)情報の構造体 */
 typedef struct {
-    SDL_bool shape[256][128];
+    SDL_Surface* surface;
     int hp;
     int speed;
     int sheild;
@@ -131,8 +127,13 @@ typedef struct {
 } Enemy;
 
 typedef struct {
+    SDL_Texture* texture[5];
+} Effect;
+
+typedef struct {
+    int enemyNum;
     Player player;
-    Enemy enemies[ENEMY_NUM];
+    Enemy enemies[MAX_ENEMY_NUM];
     Bullet bullets[BULLET_NUM];
     GameStatus phase;
 } Stage;
