@@ -10,7 +10,7 @@
 #define SHIP_WIDTH 256
 #define SHIP_HEIGHT 128
 
-#define MAX_ENEMY_NUM 4
+#define MAX_ENEMY_NUM 10
 #define BULLET_NUM 64
 #define GUN_TYPE_NUM 3
 #define MAX_GUN_NUM 30
@@ -32,11 +32,9 @@ typedef enum {
 
 typedef enum {
     PAUSE      = -1,
-    STAGE_1    = 1,
-    STAGE_2    = 2,
-    STAGE_3    = 3,
-    GAME_CLEAR = 4,
-    GAME_OVER  = 5
+    BATTLE     = 0,
+    GAME_CLEAR = 1,
+    GAME_OVER  = 2
 } GameStatus;
 
 typedef enum {
@@ -114,14 +112,13 @@ typedef struct {
 } EnemyInfo;
 
 typedef struct {
+    SDL_Texture* texture;
     EnemyInfo info;
     int hp;
     int x;
     int y;
     int vx;
     int vy;
-    int sheild;
-    GunInfo gun;
 } Enemy;
 
 typedef struct {
@@ -129,9 +126,10 @@ typedef struct {
 } Effect;
 
 typedef struct {
-    int enemyNum;
     Player player;
+    int enemyNum;
     Enemy enemies[MAX_ENEMY_NUM];
+    int bulletNum;
     Bullet bullets[BULLET_NUM];
     GameStatus phase;
 } Stage;
