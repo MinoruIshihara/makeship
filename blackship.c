@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
         exitGame(FAILED_INIT_PARTS_WIN);
     }
 
-    initActionWin();
+    initActionWin(1);
 
     SDL_Thread* eventThread = SDL_CreateThread(InputEvent, "InputEvent", &inputInfo);
     if (eventThread == NULL) {
@@ -123,12 +123,12 @@ int main(int argc, char* argv[])
 PlayerInfo initPlayer()
 {
     PlayerInfo pInfo;
+    pInfo.surface   = malloc(sizeof(SDL_Surface));
     pInfo.gunNum    = 0;
     pInfo.hp        = 0;
     pInfo.level     = 1;
     pInfo.initMoney = 800;
     pInfo.money     = 800;
-    pInfo.speed     = 100;
     pInfo.xp        = 0;
 
     return pInfo;

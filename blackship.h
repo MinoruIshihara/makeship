@@ -2,6 +2,7 @@
 #include <SDL2/SDL2_gfxPrimitives.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <math.h>
 
 /* ウインドウサイズ */
 #define WINDOW_WIDTH 640
@@ -20,7 +21,6 @@
 #define SAVE_TYPE_NUM 16
 
 #define MAIN_WINDOW_BG "mainWindow.png"
-#define PARTS_WINDOW_BG "partsWindow.png"
 
 typedef enum {
     EXIT_GAME     = -1,
@@ -51,6 +51,7 @@ typedef enum {
 /*弾丸情報の構造体*/
 typedef struct {
     SDL_Surface* surface;
+    SDL_Texture* texture;
     int damage;
 } BulletInfo;
 
@@ -59,8 +60,9 @@ typedef struct {
     SDL_bool onStage;
     int x;
     int y;
-    int xv;
-    int xy;
+    float vx;
+    float vy;
+    int t;
 } Bullet;
 
 typedef struct {
@@ -85,6 +87,7 @@ typedef struct {
 typedef struct {
     SDL_Rect shape[256];
     SDL_Surface* surface;
+    SDL_Texture* texture;
     int initMoney;
     int money;
     int level;
@@ -95,7 +98,6 @@ typedef struct {
 } PlayerInfo;
 
 typedef struct {
-    PlayerInfo info;
     int hp;
     int x;
     int y;
@@ -106,13 +108,13 @@ typedef struct {
 /* 敵(初期)情報の構造体 */
 typedef struct {
     SDL_Surface* surface;
+    SDL_Texture* texture;
     int hp;
     int speed;
     GunInfo gun;
 } EnemyInfo;
 
 typedef struct {
-    SDL_Texture* texture;
     EnemyInfo info;
     int hp;
     int x;
@@ -123,6 +125,13 @@ typedef struct {
 
 typedef struct {
     SDL_Texture* texture[5];
+} EffectInfo;
+
+typedef struct {
+    int x;
+    int y;
+    int t;
+    EffectInfo info;
 } Effect;
 
 typedef struct {

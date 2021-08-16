@@ -84,8 +84,8 @@ int initMainWin()
 
         SDL_Rect playerSrc    = { 0, 0, 500, 182 };
         SDL_Rect playerTarget = { 454, 166, 150, 55 };
-        texture               = SDL_CreateTextureFromSurface(render, playerInfo.surface);
-        SDL_RenderCopy(render, texture, &playerSrc, &playerTarget);
+        //texture               = SDL_CreateTextureFromSurface(render, playerInfo.surface);
+        SDL_RenderCopy(render, playerInfo.texture, &playerSrc, &playerTarget);
 
         char playerHP[100];
         sprintf(playerHP, "耐久 : %d", playerInfo.hp);

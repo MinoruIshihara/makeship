@@ -47,11 +47,13 @@ void getBodyList();
 
 int initPartsWin()
 {
-    partsBG     = SDL_CreateTextureFromSurface(render, IMG_Load(PARTS_WINDOW_BG));
+    partsBG     = SDL_CreateTextureFromSurface(render, IMG_Load("partsWindow.png"));
     gunListTex  = SDL_CreateTextureFromSurface(render, IMG_Load("gun_list.png"));
     bodyListTex = SDL_CreateTextureFromSurface(render, IMG_Load("body_list.png"));
 
-    bodyDraw = SDL_CreateRGBSurface(0, 499, 182, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+    bodyDraw      = SDL_CreateRGBSurface(0, 499, 182, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
+    SDL_Rect rect = { 0, 0, 499, 128 };
+    SDL_FillRect(bodyDraw, &rect, 0xffffff00);
 
     getBodyList();
     getGunList();
@@ -63,9 +65,6 @@ int initPartsWin()
 
 void drawPartsWin()
 {
-    int arg1                   = 0;
-    SDL_Thread *partsWinThread = SDL_CreateThread(partsWinEvent, "partsWinEvent", &arg1);
-
     SDL_Surface *surface;
     SDL_Texture *texture;
 
@@ -128,8 +127,7 @@ void drawPartsWin()
 
     SDL_RenderPresent(render);
 
-    int ret;
-    SDL_WaitThread(partsWinThread, &ret);
+    partsWinEvent();
 
     return;
 }
@@ -150,12 +148,14 @@ int partsWinEvent()
             initMainWin();
             break;
         case SAVE:
-            playerInfo.surface = bodyDraw;
+            memcpy(playerInfo.surface, bodyDraw, sizeof(SDL_Surface));
+            playerInfo.texture = SDL_CreateTextureFromSurface(render, playerInfo.surface);
             isCreatedPlayer    = SDL_TRUE;
             break;
         case CLEAR:
-            SDL_FillRect(bodyDraw, &rect, 0xffffffff);
-            SDL_FillRect(playerInfo.surface, &rect, 0xffffffff);
+            rect.w = bodyDraw->w;
+            rect.h = bodyDraw->h;
+            SDL_FillRect(bodyDraw, &rect, 0xffffff00);
             playerInfo.money = playerInfo.initMoney;
             break;
         case CLOSE_LIST:
@@ -295,6 +295,7 @@ void getGunList()
 
         BulletInfo binfo;
         binfo.surface     = IMG_Load(bulletImageName[i]);
+        binfo.texture     = SDL_CreateTextureFromSurface(render, binfo.surface);
         binfo.damage      = 20 + i * i * 10;
         gunList[i].bullet = binfo;
     }
