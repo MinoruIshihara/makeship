@@ -20,6 +20,14 @@ void drawPlayer();
 void drawEnemy();
 void drawBullet();
 
+void shootGun(int gunNum);
+
+void gameClear();
+void gameOver();
+
+SDL_bool collisionPlayer(Bullet b, Player p);
+SDL_bool collisionEnemy(Bullet b, Enemy e);
+
 EnemyInfo* makeEnemy();
 Player makePlayer();
 Stage makeStage1();
@@ -31,14 +39,13 @@ SDL_Surface* actionFront;
 SDL_Texture* actionFrontTexture;
 Stage stage;
 
-int framePos = 0;
+int framePos;
 
 int initActionWin(int stageNum)
 {
     SDL_Surface* actionBGSurface = IMG_Load("actionBG.png");
     actionBG                     = SDL_CreateTextureFromSurface(render, actionBGSurface);
-    actionFront                  = SDL_CreateRGBSurface(0, WINDOW_WIDTH, WINDOW_HEIGHT, 32, 0xff000000, 0x00ff0000, 0x0000ff00, 0x000000ff);
-    SDL_FillRect(actionFront, NULL, 0xff0000ff);
+    framePos                     = 0;
 
     return initStage(stageNum);
 }
@@ -68,10 +75,9 @@ void destroyActionWin()
 
 void drawActionWin(int millis)
 {
-    calcStage(millis);
-    SDL_Rect src       = { stage.player.x - 100, 0, 640, 270 };
-    actionFrontTexture = SDL_CreateTextureFromSurface(render, actionFront);
-    SDL_RenderCopy(render, actionFrontTexture, &src, NULL);
+    SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
+    SDL_RenderClear(render);
+    SDL_Delay(10);
     SDL_RenderCopy(render, actionBG, NULL, NULL);
     drawBullet();
     drawEnemy();
@@ -79,6 +85,7 @@ void drawActionWin(int millis)
 
     actionWinEvent();
     SDL_RenderPresent(render);
+    calcStage(millis);
     return;
 }
 
@@ -90,34 +97,43 @@ void drawPlayer()
         150, 55
     };
     SDL_RenderCopy(render, playerInfo.texture, NULL, &tar);
+    SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
+    int len = stage.player.hp * 100 / playerInfo.hp;
+    SDL_RenderDrawLine(render, stage.player.x - framePos, 270 - stage.player.y - 45, stage.player.x + len - framePos, 270 - stage.player.y - 45);
 }
 
 void drawEnemy()
 {
     for (int i = 0; i < stage.enemyNum; i++) {
-        SDL_Rect tar = {
-            stage.enemies[i].x - framePos,
-            270 - stage.enemies[i].y - 55,
-            150, 55
-        };
-        SDL_RenderCopy(render, stage.enemies[i].info.texture, NULL, &tar);
+        if (stage.enemies[i].hp > 0) {
+            SDL_Rect tar = {
+                stage.enemies[i].x - framePos,
+                270 - stage.enemies[i].y - 45,
+                125, 45
+            };
+            SDL_RenderCopy(render, stage.enemies[i].info.texture, NULL, &tar);
+            SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
+            SDL_RenderDrawLine(render, stage.enemies[i].x - framePos, 270 - stage.enemies[i].y - 45, stage.enemies[i].x + stage.enemies[i].hp - framePos, 270 - stage.enemies[i].y - 45);
+        }
     }
 }
 
 void drawBullet()
 {
-    for (int i = 0; i < stage.bulletNum; i++) {
-        SDL_Rect tar = {
-            stage.bullets[i].x - framePos,
-            270 - stage.bullets[i].y,
-            stage.bullets[i].info.surface->w / 4,
-            stage.bullets[i].info.surface->h / 4
-        };
-        if (stage.bullets[i].vx == 0) {
-            stage.bullets[i].vx = 0.00001;
+    for (int i = 0; i < BULLET_NUM; i++) {
+        if (stage.bullets[i].onStage) {
+            SDL_Rect tar = {
+                stage.bullets[i].x - framePos,
+                270 - stage.bullets[i].y,
+                stage.bullets[i].info.surface->w / 4,
+                stage.bullets[i].info.surface->h / 4
+            };
+            if (stage.bullets[i].vx == 0) {
+                stage.bullets[i].vx = 0.00001;
+            }
+            float angle = 90 - atan(stage.bullets[i].vy / stage.bullets[i].vx) * 180 / 3.14;
+            SDL_RenderCopyEx(render, stage.bullets[i].info.texture, NULL, &tar, angle, NULL, SDL_FLIP_NONE);
         }
-        float angle = 90 - atan(stage.bullets[i].vy / stage.bullets[i].vx) * 180 / 3.14;
-        SDL_RenderCopyEx(render, stage.bullets[i].info.texture, NULL, &tar, angle, NULL, SDL_FLIP_NONE);
     }
 }
 
@@ -128,22 +144,50 @@ void drawEffect()
 void actionWinEvent()
 {
     if (inputInfo.right) {
-        stage.player.vx = 1;
+        stage.player.vx = 4;
     } else if (inputInfo.left) {
-        stage.player.vx = -1;
+        stage.player.vx = -4;
     } else {
         stage.player.vx = 0;
     }
 
     if (inputInfo.mouseL) {
-        stage.bullets[stage.bulletNum].info = playerInfo.gun[0].bullet;
-        stage.bullets[stage.bulletNum].x    = stage.player.x;
-        stage.bullets[stage.bulletNum].y    = stage.player.y + 10;
-        stage.bullets[stage.bulletNum].vx   = 10;
-        stage.bullets[stage.bulletNum].vy   = 10;
-
-        stage.bulletNum += 1;
+        for (int i = 0; i < playerInfo.gunNum; i++) {
+            if (playerInfo.gun[i].t <= 0) {
+                shootGun(i);
+            }
+        }
     }
+
+    for (int i = 0; i < playerInfo.gunNum; i++) {
+        if (0 < playerInfo.gun[i].t) {
+            playerInfo.gun[i].t -= 0.1;
+        }
+    }
+}
+
+void shootGun(int gunNum)
+{
+    stage.bullets[stage.bulletNum].info = playerInfo.gun[gunNum].info.bullet;
+    stage.bullets[stage.bulletNum].x    = stage.player.x + (playerInfo.gun[gunNum].x + playerInfo.gun[gunNum].info.surface->w) / 4;
+    stage.bullets[stage.bulletNum].y    = stage.player.y + 10;
+    double x                            = inputInfo.mouseX - (stage.player.x + 75 - framePos);
+    double sita                         = 0.785;
+    if (x <= 490 && 0 <= x) {
+        sita = 0.5 * asin(x / 490.0);
+    }
+    stage.bullets[stage.bulletNum].vx = 10.0 * cos(sita);
+    stage.bullets[stage.bulletNum].vy = 10.0 * sin(sita);
+
+    stage.bullets[stage.bulletNum].onStage = SDL_TRUE;
+    stage.bullets[stage.bulletNum].t       = 0;
+
+    stage.bulletNum += 1;
+    if (stage.bulletNum > BULLET_NUM) {
+        stage.bulletNum = 0;
+    }
+
+    playerInfo.gun[gunNum].t = playerInfo.gun[gunNum].info.duration;
 }
 
 void actionWinEnemyEvent()
@@ -153,13 +197,91 @@ void actionWinEnemyEvent()
 void calcStage(int millis)
 {
     stage.player.x += stage.player.vx;
-
-    for (int i = 0; i < stage.bulletNum; i++) {
-        stage.bullets[i].x += stage.bullets[i].vx;
-        stage.bullets[i].y += stage.bullets[i].vy;
-
-        stage.bullets[i].vy -= 0.2;
+    if (320 < stage.player.x + 75 && stage.player.x < 1600) {
+        framePos = stage.player.x + 75 - 320;
     }
+
+    for (int i = 0; i < BULLET_NUM; i++) {
+        if (stage.bullets[i].onStage) {
+            stage.bullets[i].t++;
+
+            stage.bullets[i].x += stage.bullets[i].vx;
+            stage.bullets[i].y += stage.bullets[i].vy;
+
+            stage.bullets[i].vy -= 0.2;
+
+            if (stage.bullets[i].y < 0) {
+                stage.bullets[i].onStage = SDL_FALSE;
+            }
+
+            for (int j = 0; j < stage.enemyNum; j++) {
+                if (0 < stage.enemies[j].hp && 4 < stage.bullets[i].t && collisionEnemy(stage.bullets[i], stage.enemies[j])) {
+                    stage.enemies[j].hp -= stage.bullets[i].info.damage;
+                    if (stage.enemies[j].hp < 1) {
+                        stage.score += stage.enemies[j].info.hp;
+                        if (j == stage.enemyNum - 1) {
+                            gameClear();
+                        }
+                    }
+                    stage.bullets[i].onStage = SDL_FALSE;
+                }
+            }
+
+            if (20 < stage.bullets[i].t && collisionPlayer(stage.bullets[i], stage.player)) {
+                stage.player.hp -= stage.bullets[i].info.damage;
+                if (stage.player.hp < 1) {
+                    gameOver();
+                }
+                stage.bullets[i].onStage = SDL_FALSE;
+            }
+        }
+    }
+}
+
+SDL_bool collisionEnemy(Bullet b, Enemy e)
+{
+    int pointX = (b.x + b.info.surface->w / 8 - e.x) * e.info.surface->w / 125;
+    int pointY = (45 - (b.y - b.info.surface->h / 8)) * e.info.surface->h / 45;
+    //unsigned char* pixels = (unsigned char*)e.info.surface->pixels;
+    return 0 <= pointX && pointX < e.info.surface->w && 0 <= pointY && pointY < e.info.surface->h;
+}
+
+SDL_bool collisionPlayer(Bullet b, Player p)
+{
+    int pointX            = b.x + b.info.surface->w / 8 - p.x;
+    int pointY            = 55 - (b.y - b.info.surface->h / 8);
+    unsigned char* pixels = (unsigned char*)playerInfo.surface->pixels;
+    if (0 <= pointX && pointX < 150 && 0 <= pointY && pointY < 55) {
+        int a = pixels[4 * (pointY * playerInfo.surface->w) + pointX + 3];
+        return (a == 255);
+    } else {
+        return SDL_FALSE;
+    }
+}
+
+void gameClear()
+{
+    SDL_Surface* surface = TTF_RenderUTF8_Blended(font30, "完了", (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Rect tar         = { 320 - surface->w / 2, 160 - surface->h / 2, surface->w, surface->h };
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(render, surface);
+    SDL_RenderCopy(render, texture, NULL, &tar);
+    SDL_RenderPresent(render);
+    SDL_Delay(3000);
+    playerInfo.money += stage.score;
+    gameMode = MAIN_WINDOW;
+    initMainWin();
+}
+
+void gameOver()
+{
+    SDL_Surface* surface = TTF_RenderUTF8_Blended(font30, "完了", (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Rect tar         = { 320 - surface->w / 2, 160 - surface->h / 2, surface->w, surface->h };
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(render, surface);
+    SDL_RenderCopy(render, texture, NULL, &tar);
+    SDL_RenderPresent(render);
+    SDL_Delay(3000);
+    gameMode = MAIN_WINDOW;
+    initMainWin();
 }
 
 EnemyInfo* makeEnemy()
@@ -250,6 +372,12 @@ Stage makeStage1()
         stage1.enemies[i].info.texture = SDL_CreateTextureFromSurface(render, stage1.enemies[i].info.surface);
     }
 
+    for (int i = 0; i < BULLET_NUM; i++) {
+        stage1.bullets[i].onStage = SDL_FALSE;
+    }
+
+    stage1.score = 0;
+
     return stage1;
 }
 
@@ -296,6 +424,12 @@ Stage makeStage2()
         stage2.enemies[i].vx           = 0;
         stage2.enemies[i].info.texture = SDL_CreateTextureFromSurface(render, stage2.enemies[i].info.surface);
     }
+
+    for (int i = 0; i < BULLET_NUM; i++) {
+        stage2.bullets[i].onStage = SDL_FALSE;
+    }
+
+    stage2.score = 0;
 
     return stage2;
 }
@@ -355,6 +489,12 @@ Stage makeStage3()
         stage3.enemies[i].vx           = 0;
         stage3.enemies[i].info.texture = SDL_CreateTextureFromSurface(render, stage3.enemies[i].info.surface);
     }
+
+    for (int i = 0; i < BULLET_NUM; i++) {
+        stage3.bullets[i].onStage = SDL_FALSE;
+    }
+
+    stage3.score = 0;
 
     return stage3;
 }

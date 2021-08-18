@@ -45,6 +45,9 @@ void DestroyWindow(void)
 
 int initMainWin()
 {
+    SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
+    SDL_RenderClear(render);
+
     firstDraw = SDL_TRUE;
 
     SDL_Surface *s
@@ -79,7 +82,7 @@ int initMainWin()
     if (isCreatedPlayer) {
         int atk = 0;
         for (int i = 0; i < playerInfo.gunNum; i++) {
-            atk += playerInfo.gun[i].bullet.damage;
+            atk += playerInfo.gun[i].info.bullet.damage;
         }
 
         SDL_Rect playerSrc    = { 0, 0, 500, 182 };
@@ -125,6 +128,7 @@ void mainWinEvent()
     if (inputInfo.mouseL) {
         switch (getMainAction()) {
         case DEPLOY:
+            initActionWin(1);
             gameMode = ACTION_WINDOW;
             break;
         case PARTS:

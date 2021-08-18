@@ -74,8 +74,6 @@ int main(int argc, char* argv[])
         exitGame(FAILED_INIT_PARTS_WIN);
     }
 
-    initActionWin(1);
-
     SDL_Thread* eventThread = SDL_CreateThread(InputEvent, "InputEvent", &inputInfo);
     if (eventThread == NULL) {
         exitGame(FAIELD_INIT_THREAD);

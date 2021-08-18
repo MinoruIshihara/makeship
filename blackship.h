@@ -69,12 +69,14 @@ typedef struct {
     BulletInfo bullet;
     SDL_Surface* surface;
     int cost;
+    int duration;
 } GunInfo;
 
 typedef struct {
     GunInfo info;
     int x;
     int y;
+    float t;
 } Gun;
 
 typedef struct {
@@ -93,7 +95,7 @@ typedef struct {
     int level;
     int hp;
     int gunNum;
-    GunInfo gun[MAX_GUN_NUM];
+    Gun gun[MAX_GUN_NUM];
     int xp;
 } PlayerInfo;
 
@@ -141,6 +143,7 @@ typedef struct {
     int bulletNum;
     Bullet bullets[BULLET_NUM];
     GameStatus phase;
+    int score;
 } Stage;
 
 typedef struct {
@@ -187,5 +190,5 @@ extern int InitWindow(void);
 extern void DestroyWindow(void);
 extern void RenderWindow(void);
 
-extern void collisionPlayer(Bullet* ci, Player* cj);
-extern void collisionEnemy(Bullet* ci, Enemy* cj);
+extern SDL_bool collisionPlayer(Bullet b, Player p);
+extern SDL_bool collisionEnemy(Bullet b, Enemy e);

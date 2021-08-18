@@ -290,8 +290,9 @@ void getGunList()
     };
 
     for (int i = 0; i < GUN_TYPE_NUM; i++) {
-        gunList[i].surface = IMG_Load(imageName[i]);
-        gunList[i].cost    = 20 + i * i * 10;
+        gunList[i].surface  = IMG_Load(imageName[i]);
+        gunList[i].cost     = 20 + i * i * 10;
+        gunList[i].duration = 4 + i * 2;
 
         BulletInfo binfo;
         binfo.surface     = IMG_Load(bulletImageName[i]);
@@ -335,15 +336,21 @@ void placeBody(BodyInfo body, int x, int y)
     }
 }
 
-void placeGun(GunInfo gun, int x, int y)
+void placeGun(GunInfo gunInfo, int x, int y)
 {
-    if (playerInfo.money < gun.cost) {
+    if (playerInfo.money < gunInfo.cost) {
         editMode = NORMAL;
     } else {
-        SDL_Rect tar = { x - 50, y - 43, gun.surface->w, gun.surface->h };
-        SDL_BlitSurface(gun.surface, NULL, bodyDraw, &tar);
+        SDL_Rect tar = { x - 50, y - 43, gunInfo.surface->w, gunInfo.surface->h };
+        SDL_BlitSurface(gunInfo.surface, NULL, bodyDraw, &tar);
+        Gun gun;
+        gun.info = gunInfo;
+        gun.t    = (float)gunInfo.duration;
+        gun.x    = x - 50;
+        gun.y    = y - 43;
+
         playerInfo.gun[playerInfo.gunNum] = gun;
         playerInfo.gunNum++;
-        playerInfo.money -= gun.cost;
+        playerInfo.money -= gunInfo.cost;
     }
 }
