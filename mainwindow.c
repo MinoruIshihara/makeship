@@ -5,6 +5,7 @@ typedef enum {
     NONE   = 0,
     PARTS  = 1,
     DEPLOY = 2,
+    STAGE  = 3
 } ActionCommand;
 
 SDL_Window *window;
@@ -79,6 +80,13 @@ int initMainWin()
     texture            = SDL_CreateTextureFromSurface(render, surface);
     SDL_RenderCopy(render, texture, NULL, &expTarget);
 
+    char stageStr[10];
+    sprintf(stageStr, "%d", stageNum);
+    surface           = TTF_RenderUTF8_Blended(font30, stageStr, (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Rect stageTar = { 140, 260, surface->w, surface->h };
+    texture           = SDL_CreateTextureFromSurface(render, surface);
+    SDL_RenderCopy(render, texture, NULL, &stageTar);
+
     if (isCreatedPlayer) {
         int atk = 0;
         for (int i = 0; i < playerInfo.gunNum; i++) {
@@ -128,7 +136,7 @@ void mainWinEvent()
     if (inputInfo.mouseL) {
         switch (getMainAction()) {
         case DEPLOY:
-            initActionWin(1);
+            initActionWin(stageNum);
             gameMode = ACTION_WINDOW;
             break;
         case PARTS:
@@ -137,6 +145,13 @@ void mainWinEvent()
         case EXIT:
             gameMode = EXIT_GAME;
             break;
+        case STAGE:
+            stageNum++;
+            if (stageNum > 3) {
+                stageNum = 1;
+            }
+            initMainWin();
+            SDL_Delay(300);
         default:
             break;
         }
@@ -156,6 +171,8 @@ ActionCommand getMainAction()
         actionCmd = PARTS;
     } else if (515 < x && x < 615 && 8 < y && y < 55) {
         actionCmd = EXIT;
+    } else if (20 < x && x < 425 && 250 < y && y < 350) {
+        actionCmd = STAGE;
     }
     return actionCmd;
 }

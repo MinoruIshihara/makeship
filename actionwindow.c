@@ -20,10 +20,13 @@ void drawPlayer();
 void drawEnemy();
 void drawBullet();
 
-void shootGun(int gunNum);
+void playerGun(int gunNum, int pointX);
+void enemyGun(BulletInfo b, int pointX, int tarX);
 
 void gameClear();
 void gameOver();
+
+void enemyAI();
 
 SDL_bool collisionPlayer(Bullet b, Player p);
 SDL_bool collisionEnemy(Bullet b, Enemy e);
@@ -75,7 +78,7 @@ void destroyActionWin()
 
 void drawActionWin(int millis)
 {
-    SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
+    SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
     SDL_RenderClear(render);
     SDL_Delay(10);
     SDL_RenderCopy(render, actionBG, NULL, NULL);
@@ -132,6 +135,9 @@ void drawBullet()
                 stage.bullets[i].vx = 0.00001;
             }
             float angle = 90 - atan(stage.bullets[i].vy / stage.bullets[i].vx) * 180 / 3.14;
+            if (stage.bullets[i].vx < 0) {
+                angle = angle - 180;
+            }
             SDL_RenderCopyEx(render, stage.bullets[i].info.texture, NULL, &tar, angle, NULL, SDL_FLIP_NONE);
         }
     }
@@ -152,26 +158,31 @@ void actionWinEvent()
     }
 
     if (inputInfo.mouseL) {
-        for (int i = 0; i < playerInfo.gunNum; i++) {
-            if (playerInfo.gun[i].t <= 0) {
-                shootGun(i);
+        if (6 <= inputInfo.mouseX && inputInfo.mouseX <= 60 && 6 <= inputInfo.mouseY && inputInfo.mouseY <= 99) {
+            gameMode = MAIN_WINDOW;
+            initMainWin();
+        } else {
+            for (int i = 0; i < playerInfo.gunNum; i++) {
+                if (playerInfo.gun[i].t <= 0) {
+                    playerGun(i, inputInfo.mouseX);
+                }
             }
         }
     }
 
     for (int i = 0; i < playerInfo.gunNum; i++) {
         if (0 < playerInfo.gun[i].t) {
-            playerInfo.gun[i].t -= 0.1;
+            playerInfo.gun[i].t -= 0.3;
         }
     }
 }
 
-void shootGun(int gunNum)
+void playerGun(int gunNum, int pointX)
 {
     stage.bullets[stage.bulletNum].info = playerInfo.gun[gunNum].info.bullet;
     stage.bullets[stage.bulletNum].x    = stage.player.x + (playerInfo.gun[gunNum].x + playerInfo.gun[gunNum].info.surface->w) / 4;
     stage.bullets[stage.bulletNum].y    = stage.player.y + 10;
-    double x                            = inputInfo.mouseX - (stage.player.x + 75 - framePos);
+    double x                            = pointX - (stage.player.x + 75 - framePos);
     double sita                         = 0.785;
     if (x <= 490 && 0 <= x) {
         sita = 0.5 * asin(x / 490.0);
@@ -196,6 +207,8 @@ void actionWinEnemyEvent()
 
 void calcStage(int millis)
 {
+    enemyAI();
+
     stage.player.x += stage.player.vx;
     if (320 < stage.player.x + 75 && stage.player.x < 1600) {
         framePos = stage.player.x + 75 - 320;
@@ -215,7 +228,7 @@ void calcStage(int millis)
             }
 
             for (int j = 0; j < stage.enemyNum; j++) {
-                if (0 < stage.enemies[j].hp && 4 < stage.bullets[i].t && collisionEnemy(stage.bullets[i], stage.enemies[j])) {
+                if (0 < stage.enemies[j].hp && 20 < stage.bullets[i].t && collisionEnemy(stage.bullets[i], stage.enemies[j])) {
                     stage.enemies[j].hp -= stage.bullets[i].info.damage;
                     if (stage.enemies[j].hp < 1) {
                         stage.score += stage.enemies[j].info.hp;
@@ -238,10 +251,46 @@ void calcStage(int millis)
     }
 }
 
+void enemyAI()
+{
+    for (int i = 0; i < stage.enemyNum; i++) {
+        if (stage.enemies[i].hp > 0 && stage.enemies[i].x - stage.player.x < 320) {
+            if (stage.enemies[i].info.gun.t <= 0) {
+                enemyGun(stage.enemies[i].info.gun.info.bullet, stage.enemies[i].x, stage.player.x + 35);
+                stage.enemies[i].info.gun.t = stage.enemies[i].info.gun.info.duration;
+            } else {
+                stage.enemies[i].info.gun.t -= 0.05;
+            }
+        }
+    }
+}
+
+void enemyGun(BulletInfo b, int pointX, int tarX)
+{
+    stage.bullets[stage.bulletNum].info = b;
+    stage.bullets[stage.bulletNum].x    = pointX;
+    stage.bullets[stage.bulletNum].y    = 0;
+    double x                            = pointX - tarX;
+    double sita                         = 0.785;
+    if (x <= 490 && 0 <= x) {
+        sita = 0.5 * asin(x / 490.0);
+    }
+    stage.bullets[stage.bulletNum].vx = -10.0 * cos(sita);
+    stage.bullets[stage.bulletNum].vy = 10.0 * sin(sita);
+
+    stage.bullets[stage.bulletNum].onStage = SDL_TRUE;
+    stage.bullets[stage.bulletNum].t       = 0;
+
+    stage.bulletNum += 1;
+    if (stage.bulletNum > BULLET_NUM) {
+        stage.bulletNum = 0;
+    }
+}
+
 SDL_bool collisionEnemy(Bullet b, Enemy e)
 {
     int pointX = (b.x + b.info.surface->w / 8 - e.x) * e.info.surface->w / 125;
-    int pointY = (45 - (b.y - b.info.surface->h / 8)) * e.info.surface->h / 45;
+    int pointY = (45 - (b.y + b.info.surface->h / 8)) * e.info.surface->h / 45;
     //unsigned char* pixels = (unsigned char*)e.info.surface->pixels;
     return 0 <= pointX && pointX < e.info.surface->w && 0 <= pointY && pointY < e.info.surface->h;
 }
@@ -274,7 +323,7 @@ void gameClear()
 
 void gameOver()
 {
-    SDL_Surface* surface = TTF_RenderUTF8_Blended(font30, "完了", (SDL_Color){ 0, 0, 0, 255 });
+    SDL_Surface* surface = TTF_RenderUTF8_Blended(font30, "終", (SDL_Color){ 0, 0, 0, 255 });
     SDL_Rect tar         = { 320 - surface->w / 2, 160 - surface->h / 2, surface->w, surface->h };
     SDL_Texture* texture = SDL_CreateTextureFromSurface(render, surface);
     SDL_RenderCopy(render, texture, NULL, &tar);
@@ -288,48 +337,53 @@ EnemyInfo* makeEnemy()
 {
     EnemyInfo* enemies = malloc(sizeof(EnemyInfo) * 5);
 
-    enemies[0].gun.bullet.damage  = 20;
-    enemies[0].gun.bullet.surface = IMG_Load("bullet1.png");
-    enemies[0].gun.cost           = 0;
-    enemies[0].gun.surface        = IMG_Load("gun1.png");
-    enemies[0].hp                 = 150;
-    enemies[0].speed              = 2;
-    enemies[0].surface            = IMG_Load("enemy1.png");
+    enemies[0].gun.info.bullet.damage  = 20;
+    enemies[0].gun.info.bullet.surface = IMG_Load("bullet1.png");
+    enemies[0].gun.info.cost           = 0;
+    enemies[0].gun.info.surface        = IMG_Load("gun1.png");
+    enemies[0].hp                      = 150;
+    enemies[0].speed                   = 2;
+    enemies[0].surface                 = IMG_Load("enemy1.png");
+    enemies[0].gun.info.duration       = 2;
 
-    enemies[1].gun.bullet.damage  = 40;
-    enemies[1].gun.bullet.surface = IMG_Load("bullet2.png");
-    enemies[1].gun.cost           = 0;
-    enemies[1].gun.surface        = IMG_Load("gun2.png");
-    enemies[1].hp                 = 200;
-    enemies[1].speed              = 2;
-    enemies[1].surface            = IMG_Load("enemy2.png");
+    enemies[1].gun.info.bullet.damage  = 40;
+    enemies[1].gun.info.bullet.surface = IMG_Load("bullet2.png");
+    enemies[1].gun.info.cost           = 0;
+    enemies[1].gun.info.surface        = IMG_Load("gun2.png");
+    enemies[1].hp                      = 200;
+    enemies[1].speed                   = 2;
+    enemies[1].surface                 = IMG_Load("enemy2.png");
+    enemies[1].gun.info.duration       = 4;
 
-    enemies[2].gun.bullet.damage  = 40;
-    enemies[2].gun.bullet.surface = IMG_Load("bullet2.png");
-    enemies[2].gun.cost           = 0;
-    enemies[2].gun.surface        = IMG_Load("gun2.png");
-    enemies[2].hp                 = 300;
-    enemies[2].speed              = 1;
-    enemies[2].surface            = IMG_Load("enemy2.png");
+    enemies[2].gun.info.bullet.damage  = 40;
+    enemies[2].gun.info.bullet.surface = IMG_Load("bullet2.png");
+    enemies[2].gun.info.cost           = 0;
+    enemies[2].gun.info.surface        = IMG_Load("gun2.png");
+    enemies[2].hp                      = 300;
+    enemies[2].speed                   = 1;
+    enemies[2].surface                 = IMG_Load("enemy2.png");
+    enemies[2].gun.info.duration       = 4;
 
-    enemies[3].gun.bullet.damage  = 60;
-    enemies[3].gun.bullet.surface = IMG_Load("bullet2.png");
-    enemies[3].gun.cost           = 0;
-    enemies[3].gun.surface        = IMG_Load("gun3.png");
-    enemies[3].hp                 = 500;
-    enemies[3].speed              = 1;
-    enemies[3].surface            = IMG_Load("enemy3.png");
+    enemies[3].gun.info.bullet.damage  = 60;
+    enemies[3].gun.info.bullet.surface = IMG_Load("bullet2.png");
+    enemies[3].gun.info.cost           = 0;
+    enemies[3].gun.info.surface        = IMG_Load("gun3.png");
+    enemies[3].hp                      = 500;
+    enemies[3].speed                   = 1;
+    enemies[3].surface                 = IMG_Load("enemy3.png");
+    enemies[3].gun.info.duration       = 6;
 
-    enemies[4].gun.bullet.damage  = 100;
-    enemies[4].gun.bullet.surface = IMG_Load("bullet3.png");
-    enemies[4].gun.cost           = 0;
-    enemies[4].gun.surface        = IMG_Load("gun3.png");
-    enemies[4].hp                 = 200;
-    enemies[4].speed              = 1;
-    enemies[4].surface            = IMG_Load("enemy4.png");
+    enemies[4].gun.info.bullet.damage  = 100;
+    enemies[4].gun.info.bullet.surface = IMG_Load("bullet3.png");
+    enemies[4].gun.info.cost           = 0;
+    enemies[4].gun.info.surface        = IMG_Load("gun3.png");
+    enemies[4].hp                      = 200;
+    enemies[4].speed                   = 1;
+    enemies[4].surface                 = IMG_Load("enemy4.png");
+    enemies[4].gun.info.duration       = 7;
 
     for (int i = 0; i < 5; i++) {
-        enemies[i].gun.bullet.texture = SDL_CreateTextureFromSurface(render, enemies[i].gun.bullet.surface);
+        enemies[i].gun.info.bullet.texture = SDL_CreateTextureFromSurface(render, enemies[i].gun.info.bullet.surface);
     }
 
     return enemies;
@@ -459,25 +513,25 @@ Stage makeStage3()
     stage3.enemies[3].hp   = enemieInfos[1].hp;
     stage3.enemies[3].x    = WINDOW_WIDTH + 310;
 
-    stage3.enemies[3].info = enemieInfos[1];
-    stage3.enemies[3].hp   = enemieInfos[1].hp;
-    stage3.enemies[3].x    = WINDOW_WIDTH + 420;
+    stage3.enemies[4].info = enemieInfos[1];
+    stage3.enemies[4].hp   = enemieInfos[1].hp;
+    stage3.enemies[4].x    = WINDOW_WIDTH + 420;
 
-    stage3.enemies[3].info = enemieInfos[2];
-    stage3.enemies[3].hp   = enemieInfos[2].hp;
-    stage3.enemies[3].x    = WINDOW_WIDTH + 530;
+    stage3.enemies[5].info = enemieInfos[2];
+    stage3.enemies[5].hp   = enemieInfos[2].hp;
+    stage3.enemies[5].x    = WINDOW_WIDTH + 530;
 
-    stage3.enemies[3].info = enemieInfos[2];
-    stage3.enemies[3].hp   = enemieInfos[2].hp;
-    stage3.enemies[3].x    = WINDOW_WIDTH * 2 + 310;
+    stage3.enemies[6].info = enemieInfos[2];
+    stage3.enemies[6].hp   = enemieInfos[2].hp;
+    stage3.enemies[6].x    = WINDOW_WIDTH * 2 + 310;
 
-    stage3.enemies[3].info = enemieInfos[2];
-    stage3.enemies[3].hp   = enemieInfos[2].hp;
-    stage3.enemies[3].x    = WINDOW_WIDTH * 2 + 420;
+    stage3.enemies[7].info = enemieInfos[2];
+    stage3.enemies[7].hp   = enemieInfos[2].hp;
+    stage3.enemies[7].x    = WINDOW_WIDTH * 2 + 420;
 
-    stage3.enemies[3].info = enemieInfos[3];
-    stage3.enemies[3].hp   = enemieInfos[3].hp;
-    stage3.enemies[3].x    = WINDOW_WIDTH * 2 + 530;
+    stage3.enemies[8].info = enemieInfos[3];
+    stage3.enemies[8].hp   = enemieInfos[3].hp;
+    stage3.enemies[8].x    = WINDOW_WIDTH * 2 + 530;
 
     stage3.bulletNum = 0;
 

@@ -25,6 +25,8 @@ TTF_Font* font;
 TTF_Font* font30;
 TTF_Font* font40;
 
+int stageNum = 1;
+
 /* main */
 int main(int argc, char* argv[])
 {

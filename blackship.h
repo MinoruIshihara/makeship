@@ -113,7 +113,7 @@ typedef struct {
     SDL_Texture* texture;
     int hp;
     int speed;
-    GunInfo gun;
+    Gun gun;
 } EnemyInfo;
 
 typedef struct {
@@ -192,3 +192,5 @@ extern void RenderWindow(void);
 
 extern SDL_bool collisionPlayer(Bullet b, Player p);
 extern SDL_bool collisionEnemy(Bullet b, Enemy e);
+
+extern int stageNum;
