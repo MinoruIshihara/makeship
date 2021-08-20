@@ -256,7 +256,7 @@ void enemyAI()
     for (int i = 0; i < stage.enemyNum; i++) {
         if (stage.enemies[i].hp > 0 && stage.enemies[i].x - stage.player.x < 320) {
             if (stage.enemies[i].info.gun.t <= 0) {
-                enemyGun(stage.enemies[i].info.gun.info.bullet, stage.enemies[i].x, stage.player.x + 35);
+                enemyGun(stage.enemies[i].info.gun.info.bullet, stage.enemies[i].x, stage.player.x);
                 stage.enemies[i].info.gun.t = stage.enemies[i].info.gun.info.duration;
             } else {
                 stage.enemies[i].info.gun.t -= 0.05;
